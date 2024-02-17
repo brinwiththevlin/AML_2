@@ -1,41 +1,52 @@
-function conf_matrix = parzen(pos_label, data, poly)
-    string_label = data{:,end};
-    Y = strcmp(string_label, pos_label);
-    X =table2array(data(:, 1:end-1));
+function conf_matrix = parzen(pos_label, train_data, test_data, poly)
+    train_labels = strcmp(train_data{:, end}, pos_label);
+    test_labels = strcmp(test_data{:, end}, pos_label);
     
-    nPlus = sum(Y);
-    nMinus = length(Y) - nPlus;
-    
-    aPlus = zeros(length(Y),1);
-    aMinus = zeros(length(Y),1);
-    
-    
+    train_features = table2array(train_data(:, 1:end-1));
+    test_features = table2array(test_data(:, 1:end-1));
 
-    for i=1:length(Y)
-        if Y(i) == 1
-            aPlus(i) = 1/nPlus;
+    nPlus = sum(train_labels);
+    nMinus = length(train_labels) - nPlus;
+
+    aPlus = zeros(length(train_labels), 1);
+    aMinus = zeros(length(train_labels), 1);
+
+    for i = 1:length(train_labels)
+        if train_labels(i) == 1
+            aPlus(i) = 1 / nPlus;
         else
-            aMinus(i) = 1/nMinus;
+            aMinus(i) = 1 / nMinus;
         end
     end
+
     alpha = aPlus - aMinus;
-    n = size(X, 1);
-    K = zeros(n, n);
-    
-    for i = 1:n
-        for j = 1:n
+    n_train = size(train_features, 1);
+    n_test = size(test_features,1);
+    K_train = zeros(n_train);
+    K_both = zeros(n_train, n_test);
+
+    for i = 1:n_train
+        for j = 1:n_train
             if poly == false
-                K(i, j) = dot(X(i, :), X(j, :));
+                K_train(i, j) = dot(train_features(i, :), train_features(j, :));
             else
-                K(i, j) = polykernel(X(i, :), X(j, :));
+                K_train(i, j) = polykernel(train_features(i, :), train_features(j, :));
             end
         end
     end
     
-    b = (aPlus'*K*aPlus - aMinus'*K*aMinus)/2;
-    h = sign(K*alpha - b);
-    
-    Y = Y*2 -1;
-    conf_matrix = confusionmat(Y,h);
+    for i = 1:n_train
+        for j = 1:n_test
+            if poly == false
+                K_both(i, j) = dot(train_features(i, :), test_features(j, :));
+            else
+                K_both(i, j) = polykernel(train_features(i, :), test_features(j, :));
+            end
+        end
+    end
 
+    b = (aPlus' * K_train * aPlus - aMinus' * K_train * aMinus) / 2;
+    h = sign(K_both' * alpha - b);
+
+    conf_matrix = confusionmat(test_labels * 2 - 1, h);
 end
