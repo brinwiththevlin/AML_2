@@ -1,4 +1,4 @@
-function conf_matrix = parzen(pos_label, train_data, test_data, poly)
+function conf_matrix = parzen2b(pos_label, train_data, test_data)
     train_labels = strcmp(train_data{:, end}, pos_label);
     test_labels = strcmp(test_data{:, end}, pos_label);
     
@@ -23,20 +23,27 @@ function conf_matrix = parzen(pos_label, train_data, test_data, poly)
     n_train = size(train_features, 1);
     n_test = size(test_features,1);
     K_train = zeros(n_train);
-    K_both
+    K_both = zeros(n_train, n_test);
 
     for i = 1:n_train
         for j = 1:n_train
-            if poly == false
-                K_train(i, j) = dot(train_features(i, :), train_features(j, :));
-            else
-                K_train(i, j) = polykernel(train_features(i, :), train_features(j, :));
-            end
+            K_train(i, j) = dot(train_features(i, :), train_features(j, :));
+        end
+    end
+    
+    for i = 1:n_train
+        for j = 1:n_test
+            K_both(i, j) = dot(train_features(i, :), test_features(j, :));
         end
     end
 
-    b = (aPlus' * K * aPlus - aMinus' * K * aMinus) / 2;
-    h = sign(K * alpha - b);
+    max_val = max(max(K_train(:)), max(K_both(:)));
+    min_val = min(min(K_train(:)), min(K_both(:)));
+    
+    K_train = (K_train - min_val)/(max_val - min_val);
+    K_both = (K_both - min_val)/(max_val - min_val);
+    b = (aPlus' * K_train * aPlus - aMinus' * K_train * aMinus) / 2;
+    h = sign(K_both' * alpha - b);
 
     conf_matrix = confusionmat(test_labels * 2 - 1, h);
 end

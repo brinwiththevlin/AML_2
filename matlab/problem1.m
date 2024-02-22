@@ -11,5 +11,4 @@ labels = {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'};
    disp("polynomial kernel");
    confusion_matrix2 = parzen(labels(i), train_data, test_data, true);
    disp(confusion_matrix2);
-    
 end
