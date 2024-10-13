@@ -1,0 +1,222 @@
+% polykernel.m
+function result = polykernel(X, Y)
+    result = (2*dot(X,Y)+1)^3;
+end
+
+
+% test_train_split.m
+function [test, train] = test_train_split(data, holdout)
+    % data: The dataset to be split
+    % holdout: The ratio of data to be held out for testing (e.g., 0.2 for 20%)
+    
+    % Shuffle the data
+    shuffled_indices = randperm(size(data, 1));
+    shuffled_data = data(shuffled_indices, :);
+    
+    % Calculate the number of samples for testing
+    num_test_samples = round(holdout * size(data, 1));
+    
+    % Split the data
+    test = shuffled_data(1:num_test_samples, :);
+    train = shuffled_data(num_test_samples+1:end, :);
+end
+
+
+% min_max_norm.m
+function result = min_max_norm(X)
+    % column wise min max nonrmalization
+    for i=1:size(X,2)
+        temp = X(:,i);
+        temp =  (temp - min(temp)) / (max(temp - min(temp)));
+        X(:,i) = temp;
+    end
+    result = X*100;
+end
+
+
+% parzen.m
+function conf_matrix = parzen(pos_label, train_data, test_data, poly)
+    train_labels = strcmp(train_data{:, end}, pos_label);
+    test_labels = strcmp(test_data{:, end}, pos_label);
+    
+    train_features = table2array(train_data(:, 1:end-1));
+    test_features = table2array(test_data(:, 1:end-1));
+
+    nPlus = sum(train_labels);
+    nMinus = length(train_labels) - nPlus;
+
+    aPlus = zeros(length(train_labels), 1);
+    aMinus = zeros(length(train_labels), 1);
+
+    for i i) = 1 / nPlus;
+        else
+            aMinus(i) = 1 / nMinus;
+        end= 1:length(train_labels)
+        if train_labels(i) == 1
+            aPlus(
+    end
+
+    alpha = aPlus - aMinus;
+    n_train = size(train_features, 1);
+    n_test = size(test_features,1);
+    K_train = zeros(n_train);
+    K_both = zeros(n_train, n_test);
+
+    for i = 1:n_train
+        for j = 1:n_train
+            if poly == false
+                K_train(i, j) = dot(train_features(i, :), train_features(j, :));
+            else
+                K_train(i, j) = polykernel(train_features(i, :), train_features(j, :));
+            end
+        end
+    end
+    
+    for i = 1:n_train
+        for j = 1:n_test
+            if poly == false
+                K_both(i, j) = dot(train_features(i, :), test_features(j, :));
+            else
+                K_both(i, j) = polykernel(train_features(i, :), test_features(j, :));
+            end
+        end
+    end
+
+    b = (aPlus' * K_train * aPlus - aMinus' * K_train * aMinus) / 2;
+    h = sign(K_both' * alpha - b);
+
+    conf_matrix = confusionmat(test_labels * 2 - 1, h);
+end
+
+
+% problem1.m
+% Read the data from the file
+data = readtable('./data/iris-1.csv', 'Delimiter', ',', 'ReadVariableNames', false);
+[test_data, train_data] = test_train_split(data, .2); 
+labels = {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'};
+
+ for i = 1:length(labels)
+   disp(labels(i));
+   disp("K0");
+   confusion_matrix = parzen(labels(i), train_data, test_data, false);
+   disp(confusion_matrix);
+   disp("polynomial kernel");
+   confusion_matrix2 = parzen(labels(i), train_data, test_data, true);
+   disp(confusion_matrix2);
+end
+
+
+%parzen2a.m
+function conf_matrix = parzen2a(pos_label, train_data, test_data)
+    train_labels = strcmp(train_data{:, end}, pos_label);
+    test_labels = strcmp(test_data{:, end}, pos_label);
+    
+    train_features = min_max_norm(table2array(train_data(:, 1:end-1)));
+    test_features = min_max_norm(table2array(test_data(:, 1:end-1)));
+
+    nPlus = sum(train_labels);
+    nMinus = length(train_labels) - nPlus;
+
+    aPlus = zeros(length(train_labels), 1);
+    aMinus = zeros(length(train_labels), 1);
+
+    for i = 1:length(train_labels)
+        if train_labels(i) == 1
+            aPlus(i) = 1 / nPlus;
+        else
+            aMinus(i) = 1 / nMinus;
+        end
+    end
+
+    alpha = aPlus - aMinus;
+    n_train = size(train_features, 1);
+    n_test = size(test_features,1);
+    K_train = zeros(n_train);
+    K_both = zeros(n_train, n_test);
+
+    for i = 1:n_train
+        for j = 1:n_train
+            K_train(i, j) = dot(train_features(i, :), train_features(j, :));
+        end
+    end
+    
+    for i = 1:n_train
+        for j = 1:n_test
+            K_both(i, j) = dot(train_features(i, :), test_features(j, :));
+        end
+    end
+
+    b = (aPlus' * K_train * aPlus - aMinus' * K_train * aMinus) / 2;
+    h = sign(K_both' * alpha - b);
+
+    conf_matrix = confusionmat(test_labels * 2 - 1, h);
+end
+
+
+% parzen2b.m
+function conf_matrix = parzen2b(pos_label, train_data, test_data)
+    train_labels = strcmp(train_data{:, end}, pos_label);
+    test_labels = strcmp(test_data{:, end}, pos_label);
+    
+    train_features = table2array(train_data(:, 1:end-1));
+    test_features = table2array(test_data(:, 1:end-1));
+
+    nPlus = sum(train_labels);
+    nMinus = length(train_labels) - nPlus;
+
+    aPlus = zeros(length(train_labels), 1);
+    aMinus = zeros(length(train_labels), 1);
+
+    for i = 1:length(train_labels)
+        if train_labels(i) == 1
+            aPlus(i) = 1 / nPlus;
+        else
+            aMinus(i) = 1 / nMinus;
+        end
+    end
+
+    alpha = aPlus - aMinus;
+    n_train = size(train_features, 1);
+    n_test = size(test_features,1);
+    K_train = zeros(n_train);
+    K_both = zeros(n_train, n_test);
+
+    for i = 1:n_train
+        for j = 1:n_train
+            K_train(i, j) = dot(train_features(i, :), train_features(j, :));
+        end
+    end
+    
+    for i = 1:n_train
+        for j = 1:n_test
+            K_both(i, j) = dot(train_features(i, :), test_features(j, :));
+        end
+    end
+
+    max_val = max(max(K_train(:)), max(K_both(:)));
+    min_val = min(min(K_train(:)), min(K_both(:)));
+    
+    K_train = (K_train - min_val)/(max_val - min_val);
+    K_both = (K_both - min_val)/(max_val - min_val);
+    b = (aPlus' * K_train * aPlus - aMinus' * K_train * aMinus) / 2;
+    h = sign(K_both' * alpha - b);
+
+    conf_matrix = confusionmat(test_labels * 2 - 1, h);
+end
+
+
+% problem2.m
+data = readtable('./data/iris-1.csv', 'Delimiter', ',', 'ReadVariableNames', false);
+[test_data, train_data] = test_train_split(data, .2); 
+labels = {'Iris-setosa', 'Iris-versicolor', 'Iris-virginica'};
+
+ for i = 1:length(labels)
+   disp(labels(i));
+   disp("normalized features");
+   confusion_matrix = parzen2a(labels(i), train_data, test_data);
+   disp(confusion_matrix);
+   disp("normalized distances");
+   confusion_matrix2 = parzen2b(labels(i), train_data, test_data);
+   disp(confusion_matrix2);
+end
+

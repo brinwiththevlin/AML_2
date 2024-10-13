@@ -11,12 +11,12 @@ function conf_matrix = parzen(pos_label, train_data, test_data, poly)
     aPlus = zeros(length(train_labels), 1);
     aMinus = zeros(length(train_labels), 1);
 
-    for i = 1:length(train_labels)
-        if train_labels(i) == 1
-            aPlus(i) = 1 / nPlus;
+    for i i) = 1 / nPlus;
         else
             aMinus(i) = 1 / nMinus;
-        end
+        end= 1:length(train_labels)
+        if train_labels(i) == 1
+            aPlus(
     end
 
     alpha = aPlus - aMinus;
